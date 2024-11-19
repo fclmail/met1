@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Purchase Page</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@latest/dist/ethers.min.js"></script>
+</head>
+<body>
+  <h1>Purchase USDC with Polygon</h1>
+
+  <!-- Dropdown to select purchase amount -->
+  <label for="amount">Select purchase amount:</label>
+  <select id="amount">
+    <option value="200">200 USDC</option>
+    <option value="100">100 USDC</option>
+    <option value="50">50 USDC</option>
+  </select>
+  <br><br>
+
+  <!-- Button to send USDC -->
+  <button id="send-button">Send USDC</button>
+
+  <!-- Status message -->
+  <p id="status"></p>
+
+  <script>
+    (async () => {
+      // Define constants
+      const usdcContractAddress = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"; // USDC contract on Polygon
+      const recipientAddress = "0xYourRecipientWalletAddress"; // Replace with the recipient's wallet address
+      const usdcDecimals = 6; // USDC has 6 decimals
+
+      // Check if MetaMask is installed
+      if (typeof window.ethereum === "undefined") {
+        document.getElementById("status").textContent = "MetaMask is not installed!";
+        return;
+      }
+
+      // Connect to MetaMask
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+
+      // Connect to the USDC contract
+      const usdcAbi = [
+        "function transfer(address to, uint256 amount) public returns (bool)"
+      ];
+      const usdcContract = new ethers.Contract(usdcContractAddress, usdcAbi, signer);
+
+      // Handle the "Send USDC" button click
+      document.getElementById("send-button").addEventListener("click", async () => {
+        const amount = document.getElementById("amount").value;
+        const amountInWei = ethers.utils.parseUnits(amount, usdcDecimals);
+
+        try {
+          // Request wallet connection
+          await provider.send("eth_requestAccounts", []);
+
+          // Send USDC
+          const tx = await usdcContract.transfer(recipientAddress, amountInWei);
+          document.getElementById("status").textContent = `Transaction sent. Waiting for confirmation...`;
+
+          // Wait for transaction confirmation
+          await tx.wait();
+          document.getElementById("status").textContent = `Transaction confirmed! Tx Hash: ${tx.hash}`;
+        } catch (error) {
+          console.error("Transaction failed:", error);
+          document.getElementById("status").textContent = `Transaction failed: ${error.message}`;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
